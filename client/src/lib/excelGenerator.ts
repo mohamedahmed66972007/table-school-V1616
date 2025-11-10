@@ -3,6 +3,18 @@ import type { Teacher, ScheduleSlot } from "@shared/schema";
 import type { ScheduleSlotData } from "@/types/schedule";
 import type { ClassScheduleSlot } from "@/components/ClassScheduleTable";
 import { DAYS, PERIODS } from "@shared/schema";
+import { TemplateManager } from "./templateManager";
+
+async function loadActiveTemplate(): Promise<ArrayBuffer> {
+  const activeTemplate = TemplateManager.getActiveTemplate();
+  if (!activeTemplate) {
+    const defaultTemplate = TemplateManager.getBuiltInTemplates()[0];
+    const blob = await TemplateManager.getTemplateFile(defaultTemplate);
+    return await blob.arrayBuffer();
+  }
+  const blob = await TemplateManager.getTemplateFile(activeTemplate);
+  return await blob.arrayBuffer();
+}
 
 // =====================================================
 // ================ الجدول الرئيسي ======================
@@ -12,11 +24,7 @@ export async function exportMasterScheduleExcel(
   slots: ScheduleSlot[]
 ) {
   try {
-    const response = await fetch('/جدول_رئيسي_template.xlsx');
-    if (!response.ok) {
-      throw new Error('Failed to load template');
-    }
-    const arrayBuffer = await response.arrayBuffer();
+    const arrayBuffer = await loadActiveTemplate();
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
@@ -110,11 +118,7 @@ export async function exportTeacherScheduleExcel(
   slots: ScheduleSlotData[]
 ) {
   try {
-    const response = await fetch('/جداول_template_new.xlsx');
-    if (!response.ok) {
-      throw new Error('Failed to load template');
-    }
-    const arrayBuffer = await response.arrayBuffer();
+    const arrayBuffer = await loadActiveTemplate();
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
@@ -216,12 +220,7 @@ export async function exportAllTeachersExcel(
   allSlots: ScheduleSlot[]
 ) {
   try {
-    const response = await fetch('/جداول_template_new.xlsx');
-    if (!response.ok) {
-      console.error('Template fetch failed:', response.status, response.statusText);
-      throw new Error('Failed to load template');
-    }
-    const arrayBuffer = await response.arrayBuffer();
+    const arrayBuffer = await loadActiveTemplate();
 
     const finalWorkbook = new ExcelJS.Workbook();
 
@@ -392,11 +391,7 @@ export async function exportClassScheduleExcel(
   slots: ClassScheduleSlot[]
 ) {
   try {
-    const response = await fetch('/جداول_template_new.xlsx');
-    if (!response.ok) {
-      throw new Error('Failed to load template');
-    }
-    const arrayBuffer = await response.arrayBuffer();
+    const arrayBuffer = await loadActiveTemplate();
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
@@ -496,12 +491,7 @@ export async function exportAllClassesExcel(
   gradeSections?: Record<string, number[]>
 ) {
   try {
-    const response = await fetch('/جداول_template_new.xlsx');
-    if (!response.ok) {
-      console.error('Template fetch failed:', response.status, response.statusText);
-      throw new Error('Failed to load template');
-    }
-    const arrayBuffer = await response.arrayBuffer();
+    const arrayBuffer = await loadActiveTemplate();
 
     const finalWorkbook = new ExcelJS.Workbook();
     const teacherMap = new Map(allTeachers.map(t => [t.id, t]));
