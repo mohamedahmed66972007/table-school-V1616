@@ -1,170 +1,105 @@
 # نظام جدولة الحصص المدرسية
 
-## نظرة عامة
-تطبيق ويب عربي لإدارة جداول الحصص المدرسية. يسمح للمعلمين بإنشاء جداولهم الفردية، ويولد النظام تلقائياً جداول الصفوف بناءً على مدخلات المعلمين.
+## Overview
+This is an Arabic web application designed for managing school timetables. It allows teachers to create their individual schedules, and the system automatically generates class schedules based on teacher inputs. Key capabilities include managing teachers and their subjects, dynamic class section management, sophisticated conflict detection, and a flexible Excel/PDF export system with customizable templates. The project aims to provide an efficient and user-friendly solution for school administration to streamline the scheduling process.
 
-## الميزات الرئيسية
-- **إدارة المعلمين**: إضافة، تعديل، وحذف المعلمين (مع حذف تلقائي للحصص)
-  - ترتيب المعلمين حسب ترتيب مخصص للمواد مع عناوين واضحة لكل مادة
-  - المعلم الجديد يظهر تحت آخر معلم في نفس المادة
-  - تجميع المعلمين في grid واحد لكل مادة (معلمو نفس المادة متجاورين)
-  - معالجة ذكية للمواد الإضافية غير الموجودة في القائمة المخصصة
-- **جدولة الحصص**: 7 حصص × 5 أيام (الأحد-الخميس)
-- **الصفوف**: الصفوف 10-12
-- **الشعب الديناميكية**: إدارة مرنة للشعب (إضافة/حذف) لكل صف على حدة
-  - التحقق التلقائي من وجود الشعب قبل حفظ الجدول
-  - رسائل خطأ واضحة تحدد الشعب المفقودة وتوجه المستخدم لإضافتها
-- **المواد**: ترتيب مخصص للمواد (إسلامية → عربي → إنجليزي → رياضيات → كيمياء → فيزياء → أحياء → اجتماعيات → حاسوب → بدنية → فنية)
-- **التحقق من التعارضات**: منع وضع حصتين لمدرسين مختلفين في نفس الوقت والصف
-- **نظام التنبيه الذكي**: 
-  - تنبيه فوري عند إسناد صف لمعلم آخر في نفس المادة (إذا كان لديه 2+ حصص مع نفس الصف)
-  - استثناء معلمي البدنية من هذا القيد (يمكن لعدة معلمين بدنية تدريس نفس الصف)
-  - يعمل على البيانات الحالية في الذاكرة (scheduleData) لاكتشاف التعارضات قبل الحفظ
-- **حذف الحصص الفردية**: إمكانية حذف أي حصة من جدول المدرس مع تحديث فوري للواجهة
-- **الجدول الرئيسي**: 
-  - خلايا واسعة (min-w-[60px]) لعرض النص كاملاً (10/1) بدون تمرير أو اختصار
-  - عمود ملاحظات في نهاية الجدول باستخدام Input (بدون أسهم تكبير عمودي)
-  - بدون نص placeholder في الخلايا (فارغة تماماً حتى يدخل المستخدم البيانات)
-- **تصدير Excel/PDF**: 
-  - جدول معلم فردي
-  - **جميع جداول المعلمين**: ملف Excel واحد بصفحة لكل معلم (مع دمج الحصص المتتالية)
-  - **الجدول الرئيسي**: تصدير جميع المعلمين في جدول A3 واحد من اليمين لليسار
-    - ترتيب الأعمدة: ملاحظات ← الأيام (الخميس إلى الأحد) ← عدد الحصص ← المادة ← اسم المعلم ← م
-    - صفوف عناوين الأيام مدمجة مع أرقام الحصص (7-1)
-    - الجدول موسط في منتصف الصفحة
-    - صفحة واحدة فقط مع خطوط وأحجام محسّنة
-  - جدول صف فردي
-  - **جميع جداول الصفوف**: ملف Excel واحد بصفحة لكل صف (مع دمج الحصص المتتالية)
-  - تصميم موحد مع عمود أيام أعرض وخطوط عربية محسّنة
-  - حوار تخصيص لاختيار الخطوط والألوان
-  - **دمج الحصص المتتالية**: إذا كان معلم/مادة واحد في حصتين متتاليتين بنفس اليوم، يتم دمج الخلايا
-- **عرض الجداول**: مع/بدون أسماء المعلمين
-- **الواجهة**: RTL كامل، ثيم داكن، رسوم متحركة سلسة، خطوط عربية متعددة
-  - تصميم جدول محسّن بمسافات واضحة بين الخلايا (4px)
-  - تأثيرات hover ناعمة بدون حواف غامقة
-  - الصفحة الرئيسية توجّه مباشرة إلى الجدول الرئيسي
+## User Preferences
+Not specified.
 
-## البنية التقنية
+## System Architecture
 
-### Backend
-- **Framework**: Express.js
-- **التخزين**: In-memory (MemStorage)
-- **API**: RESTful endpoints لجميع عمليات CRUD
-- **المنفذ**: 5000 (frontend و backend على نفس المنفذ)
-- **المضيف**: 0.0.0.0
+### UI/UX Decisions
+- **Language and Direction**: Full RTL (Right-to-Left) support.
+- **Theming**: Dark theme.
+- **Animations**: Smooth animations for a fluid user experience.
+- **Typography**: Multiple Arabic fonts are supported.
+- **Table Design**: Enhanced table design with clear cell spacing (4px) and soft hover effects without dark borders.
+- **Main Page**: The main page directly navigates to the master schedule.
+- **Master Schedule Display**: Wide cells (min-w-[60px]) to display full text (e.g., 10/1) without scrolling or truncation.
+- **Input Fields**: Input fields for notes column in the master schedule without vertical resize arrows. Cells are empty by default, without placeholder text.
 
-### Frontend
-- **Framework**: React + TypeScript + Vite
-- **Routing**: Wouter
-- **State Management**: TanStack Query (v5)
-- **UI Components**: Shadcn/ui + Radix UI
-- **Styling**: Tailwind CSS
-- **PDF**: jsPDF + jsPDF-autotable
-- **Dev Server**: Vite integrated with Express
-
-### الملفات الرئيسية
-- `shared/schema.ts`: تعريفات الأنواع والثوابت وجداول Drizzle
-- `server/storage.ts`: واجهة التخزين وتنفيذ MemStorage
-- `server/routes.ts`: API routes
-- `server/index.ts`: Express server setup
-- `server/vite.ts`: Vite dev server integration
-- `client/src/lib/pdfGenerator.ts`: منطق تصدير PDF
-- `client/src/lib/excelGenerator.ts`: منطق تصدير Excel (يستخدم القالب الجديد)
-- `client/src/lib/excelImporter.ts`: منطق استيراد Excel
-- `client/src/pages/Teachers.tsx`: إدارة المعلمين (مع ترتيب حسب المادة)
-- `client/src/pages/TeacherSchedule.tsx`: تعديل جدول معلم
-- `client/src/pages/MasterSchedule.tsx`: الجدول الرئيسي لجميع المعلمين (مع التحقق من الشعب)
-- `client/src/pages/Classes.tsx`: عرض جداول الصفوف
-- `client/src/components/ScheduleGrid.tsx`: شبكة الجدول (مع مسافات محسّنة)
-- `client/src/components/ScheduleCell.tsx`: خلية الجدول (مع تأثيرات hover ناعمة)
-- `vite.config.ts`: إعدادات Vite مع دعم Replit proxy
-
-## API Endpoints
-
-### المعلمون
-- `GET /api/teachers` - جميع المعلمين
-- `GET /api/teachers/:id` - معلم واحد
-- `POST /api/teachers` - إنشاء معلم
-- `PUT /api/teachers/:id` - تحديث معلم
-- `DELETE /api/teachers/:id` - حذف معلم
-
-### الحصص
-- `GET /api/schedule-slots` - جميع الحصص
-- `GET /api/teachers/:id/schedule-slots` - حصص معلم
-- `POST /api/teachers/:id/schedule-slots/batch` - حفظ جدول معلم كامل (مع التحقق من التعارضات)
-- `GET /api/class-schedules/:grade/:section` - جدول صف محدد
-
-### الشعب
-- `GET /api/grade-sections` - جميع الشعب لجميع الصفوف
-- `PUT /api/grade-sections` - تحديث شعب صف محدد
-
-### استيراد Excel
-- `POST /api/import-excel` - استيراد جدول رئيسي من ملف Excel
-  - يقبل ملف Excel (multipart/form-data)
-  - يدعم خيار ignoreConflicts للمتابعة رغم التعارضات
-  - ينظف جميع البيانات القديمة ويستوردها من جديد
-  - يكتشف التعارضات تلقائياً ويعرضها للمستخدم
-  - تطبيع ذكي لأسماء المواد بإزالة التطويل والمسافات
-
-### قوالب Excel
-- `client/public/جداول_template_new.xlsx`: القالب الجديد لجداول المعلمين والصفوف
-- `client/public/جدول_رئيسي_template.xlsx`: قالب الجدول الرئيسي
-
-## معلومات مهمة
-- **staleTime**: Infinity في queryClient - يتطلب invalidation يدوي دقيق للذاكرة المؤقتة
-- **Cache Invalidation**: عند حفظ/حذف جدول معلم، يتم invalidate جميع جداول الصفوف التي تعتمد عليه
-- **التحديثات التلقائية**: جداول الصفوف تتولد تلقائياً من جداول المعلمين
-- **Cascade Delete**: عند حذف معلم، يتم حذف جميع حصصه تلقائياً من جميع الجداول
-- **Conflict Detection**: API يمنع حفظ جدول يحتوي على تعارضات (حصتان في نفس الوقت والصف)
-- **Section Validation**: المعلم والجدول الرئيسي يتحققان من وجود الشعب قبل الحفظ
-  - رسائل الخطأ التفصيلية تظهر للمستخدم عبر error.message في toast
-- **React State Management**: handleDeleteSlot ينشئ object جديد بالكامل لضمان re-render فوري
-- **Teacher Sorting & Grouping**: 
-  - ترتيب مخصص للمواد: إسلامية، عربي، إنجليزي، رياضيات، كيمياء، فيزياء، أحياء، اجتماعيات، حاسوب، بدنية، فنية
-  - يتم تجميع المعلمين في صفحة Teachers حسب المادة في grid واحد لكل مادة
-  - معالجة المواد الإضافية: أي مادة غير موجودة في القائمة المخصصة تظهر في النهاية
+### Technical Implementations
+- **Teacher Management**:
+    - Teachers are grouped by subject in a single grid, with clear titles for each subject.
+    - New teachers appear below the last teacher of the same subject.
+    - Smart handling of additional subjects not in the custom list.
+    - Custom subject order: Islamic → Arabic → English → Math → Chemistry → Physics → Biology → Social Studies → Computer → Physical Education → Art.
+- **Scheduling**: Supports 7 periods x 5 days (Sunday-Thursday).
+- **Class Sections**: Dynamic management (add/delete) per class. Automatic validation ensures sections exist before saving, providing clear error messages for missing sections.
+- **Conflict Detection**: Prevents scheduling two different teachers in the same time slot and class.
 - **Smart Alert System**:
-  - نظام التنبيه يتحقق من scheduleData (البيانات الحالية في الذاكرة) بدلاً من slots (البيانات المحفوظة)
-  - يكتشف التعارضات في نفس الجلسة قبل الحفظ
-  - معلمو البدنية مستثنون من قاعدة "معلم واحد لكل صف في المادة"
+    - Immediate alerts if a class is assigned to another teacher in the same subject (if the original teacher has 2+ periods with that class).
+    - Physical education teachers are exempt from this rule.
+    - Operates on in-memory `scheduleData` for real-time conflict detection before saving.
+- **Individual Slot Deletion**: Ability to delete any slot from a teacher's schedule with immediate UI update.
+- **Template Management System**:
+    - **Integrated Templates**: 4 fixed Excel templates with visual previews.
+    - **Local Storage**: Custom templates are saved locally in `localStorage`.
+    - **Custom Template Upload**: Unlimited custom Excel templates can be uploaded.
+    - **Template Switching**: Users can select any template for export.
+    - **Preview**: Previews for integrated templates.
+    - **Deletion**: Custom templates can be deleted (integrated templates are permanent).
+    - **Integration**: All export operations automatically use the selected template.
+- **Excel/PDF Export**:
+    - **Individual Schedules**: Export individual teacher or class schedules.
+    - **All Teacher Schedules**: Single Excel file with a page per teacher, merging consecutive slots.
+    - **Master Schedule**: Exports all teachers into a single A3-sized, RTL Excel sheet.
+        - Column order: Notes ← Days (Thursday to Sunday) ← Number of Periods ← Subject ← Teacher Name ← ID.
+        - Day title rows merged with period numbers (7-1).
+        - Table is centered on the page with optimized lines and sizes.
+    - **All Class Schedules**: Single Excel file with a page per class, merging consecutive slots.
+    - **Unified Design**: Wider day column and optimized Arabic fonts.
+    - **Customization Dialog**: For selecting fonts and colors.
+    - **Consecutive Slot Merging**: Merges cells if the same teacher/subject occupies consecutive slots on the same day.
+- **Schedule View**: Option to view schedules with or without teacher names.
+
+### System Design Choices
+
+#### Backend
+- **Framework**: Express.js
+- **Storage**: In-memory (MemStorage) for stateless operation.
+- **API**: RESTful endpoints for CRUD operations.
+- **Port**: 5000 (frontend and backend on the same port).
+- **Host**: 0.0.0.0
+
+#### Frontend
+- **Framework**: React + TypeScript + Vite.
+- **Routing**: Wouter.
+- **State Management**: TanStack Query (v5).
+- **UI Components**: Shadcn/ui + Radix UI.
+- **Styling**: Tailwind CSS.
+- **PDF Generation**: jsPDF + jsPDF-autotable.
+- **Development Server**: Vite integrated with Express.
+
+### Feature Specifications
+- **Cache Invalidation**: Manual invalidation of TanStack Query cache is required. Teacher schedule saves/deletes invalidate dependent class schedules.
+- **Automatic Updates**: Class schedules are automatically generated from teacher schedules.
+- **Cascade Delete**: Deleting a teacher automatically removes all their assigned slots.
+- **Conflict Detection**: API prevents saving schedules with conflicts (two slots at the same time and class).
+- **Section Validation**: Teacher and master schedule validation ensures sections exist before saving, with detailed error messages.
+- **React State Management**: `handleDeleteSlot` creates a new object to ensure immediate re-rendering.
+- **Teacher Sorting & Grouping**: Teachers are sorted and grouped by subject. Additional subjects are appended at the end.
+- **Smart Alert System**: Alerts work on in-memory data (`scheduleData`) to detect conflicts before saving. PE teachers are exempt from the one-teacher-per-class-per-subject rule.
 - **Excel Import System**:
-  - استيراد الجدول الرئيسي من ملف Excel
-  - قراءة البيانات من الأعمدة الصحيحة: العمود 39=اسم المدرس، العمود 38=المادة
-  - تطبيع أسماء المواد: إزالة علامات التطويل (ـ) والمسافات الزائدة
-  - معالجة جميع الأشكال المختلفة للمواد (مثل "الإسلاميــــة" → "إسلامية")
-  - دعم تسميات المواد المختلفة (مثل "الإسلاميــــة" → "إسلامية")
-  - قراءة الحصص من الأعمدة 3-37 (الخميس→الأحد، الحصص 7→1)
-  - كشف التعارضات تلقائياً مع خيارين: إصلاح أو المتابعة على أي حال
-  - حفظ جميع المعلمين حتى الذين بدون حصص
+    - Imports master schedule from Excel files.
+    - Reads data from specific columns (39 for teacher name, 38 for subject).
+    - Normalizes subject names (e.g., removing elongation marks, extra spaces).
+    - Supports various spellings/forms of subjects.
+    - Reads periods from columns 3-37 (Thursday-Sunday, periods 7-1).
+    - Automatically detects conflicts with options to fix or proceed.
+    - Saves all teachers, even those without assigned slots.
 - **Master Schedule PDF**:
-  - تخطيط RTL: الأعمدة من اليمين لليسار (ملاحظات، الأيام، عدد الحصص، المادة، الاسم، م)
-  - الأيام معكوسة: الخميس إلى الأحد
-  - الحصص معكوسة: 7 إلى 1
-  - توسيط الجدول في الصفحة باستخدام حساب leftMargin
-  - صف عناوين الأيام مدمج مع صف أرقام الحصص
+    - RTL layout with columns ordered from right to left (Notes, Days, Periods, Subject, Name, ID).
+    - Days and periods are reversed (Thursday to Sunday, 7 to 1).
+    - Table is horizontally centered.
+    - Day titles are merged with period numbers.
+- **Template Management System**: Custom templates are stored locally (localStorage), not on the server. Integrated templates are immutable. The active template is used for all export operations. Switching templates is immediate.
 
-## التشغيل
+## External Dependencies
 
-### بيئة التطوير
-```bash
-npm install  # تثبيت المكتبات
-npm run dev  # تشغيل الخادم
-```
-الخادم يعمل على المنفذ 5000 (يشمل API و Frontend)
-
-### بيئة الإنتاج
-```bash
-npm run build  # بناء المشروع
-npm run start  # تشغيل النسخة المنتجة
-```
-
-### النشر (Deployment)
-تم إعداد التطبيق للنشر على Replit:
-- **نوع النشر**: Autoscale (للتطبيقات الثابتة stateless)
-- **البناء**: `npm run build`
-- **التشغيل**: `npm run start`
-
-## إعدادات Replit المهمة
-- تم تكوين Vite لقبول جميع المضيفين (allowedHosts: true) للعمل مع Replit proxy
-- HMR (Hot Module Replacement) يعمل عبر منفذ 443
-- الخادم يعمل على 0.0.0.0:5000
+- **PDF Generation**: jsPDF, jsPDF-autotable
+- **Excel Generation**: Custom implementation utilizing local templates
+- **UI Libraries**: Shadcn/ui, Radix UI
+- **State Management**: TanStack Query (v5)
+- **Routing**: Wouter
+- **Styling**: Tailwind CSS
