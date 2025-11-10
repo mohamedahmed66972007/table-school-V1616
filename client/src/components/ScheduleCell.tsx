@@ -28,7 +28,7 @@ export default function ScheduleCell({
           type="text"
           value={value || ""}
           onChange={(e) => onValueChange(e.target.value)}
-          placeholder="مثال: 12/7"
+          placeholder=""
           className="w-full h-full text-center text-lg font-bold font-data p-2"
           disabled={readOnly}
           dir="ltr"
