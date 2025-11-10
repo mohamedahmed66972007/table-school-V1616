@@ -110,14 +110,23 @@ export default function TeacherSchedule() {
         })
       );
 
-      const response = await apiRequest<ScheduleSlot[]>(
+      const response = await fetch(
         `/api/teachers/${teacherId || id}/schedule-slots/batch`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({ slots: slotsToSave }),
         }
       );
-      return response;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
+
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/teachers/${teacherId || id}/schedule-slots`] });
@@ -133,17 +142,28 @@ export default function TeacherSchedule() {
       });
     },
     onError: (error: any) => {
-      if (error?.error === "conflict") {
+      console.error("Save error:", error);
+      
+      if (error?.error === "conflict" && error?.message) {
+        // عرض رسالة التعارض المفصلة من السيرفر
         toast({
           title: "تعارض في الجدول",
-          description: error.message || "يوجد تعارض في الجدول مع معلم آخر",
+          description: error.message,
           variant: "destructive",
+          duration: 8000,
+        });
+      } else if (error?.conflictingTeacher && error?.slot) {
+        // صيغة بديلة للتعارض
+        const { conflictingTeacher, slot } = error;
+        toast({
+          title: "تعارض في الجدول",
+          description: `يوجد تعارض مع ${conflictingTeacher.name} (${conflictingTeacher.subject}) في ${slot.day} الحصة ${slot.period} للصف ${slot.grade}/${slot.section}`,
+          variant: "destructive",
+          duration: 8000,
         });
       } else {
-        const errorMessage = error.conflict
-          ? error.conflict.message
-          : error.message || "فشل حفظ الجدول";
-
+        // رسالة خطأ عامة
+        const errorMessage = error?.message || "فشل حفظ الجدول";
         toast({
           title: "خطأ في الحفظ",
           description: errorMessage,
