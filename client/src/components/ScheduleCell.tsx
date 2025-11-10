@@ -1,14 +1,55 @@
+
 import { Plus, X } from "lucide-react";
 import type { ScheduleSlotData } from "@/types/schedule";
+import { Input } from "./ui/input";
 
 interface ScheduleCellProps {
   slot?: ScheduleSlotData;
-  onClick: () => void;
+  onClick?: () => void;
   onDelete?: () => void;
   readOnly?: boolean;
+  onValueChange?: (value: string) => void;
+  value?: string;
 }
 
-export default function ScheduleCell({ slot, onClick, onDelete, readOnly }: ScheduleCellProps) {
+export default function ScheduleCell({ 
+  slot, 
+  onClick, 
+  onDelete, 
+  readOnly,
+  onValueChange,
+  value 
+}: ScheduleCellProps) {
+  // If using direct input mode (for teacher schedule)
+  if (onValueChange !== undefined) {
+    return (
+      <div className="relative w-full h-20 group">
+        <Input
+          type="text"
+          value={value || ""}
+          onChange={(e) => onValueChange(e.target.value)}
+          placeholder="مثال: 12/7"
+          className="w-full h-full text-center text-lg font-bold font-data p-2"
+          disabled={readOnly}
+          dir="ltr"
+        />
+        {!readOnly && value && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onValueChange("");
+            }}
+            className="absolute top-1 left-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-destructive/90"
+            title="حذف الحصة"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Original mode (for class schedule - read only)
   if (!slot) {
     return (
       <button
