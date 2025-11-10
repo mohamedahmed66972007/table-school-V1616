@@ -126,9 +126,7 @@ export default function TemplateSettings() {
             <Settings className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-3xl font-bold font-heading">إدارة القوالب</h1>
-              <p className="text-muted-foreground font-body mt-1">
-                اختر قالباً من القوالب المدمجة أو أضف قالبك الخاص
-              </p>
+
             </div>
           </div>
 
@@ -138,9 +136,7 @@ export default function TemplateSettings() {
                 <FileSpreadsheet className="h-5 w-5" />
                 القوالب المتاحة
               </CardTitle>
-              <CardDescription>
-                القوالب المدمجة متاحة دائماً، ويمكنك إضافة قوالب مخصصة
-              </CardDescription>
+
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -225,9 +221,7 @@ export default function TemplateSettings() {
                 <Upload className="h-5 w-5" />
                 إضافة قالب جديد
               </CardTitle>
-              <CardDescription>
-                قم برفع ملف Excel (.xlsx) ليُضاف إلى قوائم القوالب المخصصة
-              </CardDescription>
+
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-lg p-8 bg-muted/20">
