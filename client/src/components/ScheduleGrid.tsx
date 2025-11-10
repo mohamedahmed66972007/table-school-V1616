@@ -1,3 +1,4 @@
+
 import { Card } from "./ui/card";
 import { DAYS, PERIODS } from "@shared/schema";
 import ScheduleCell from "./ScheduleCell";
@@ -6,15 +7,34 @@ import type { ScheduleSlotData } from "@/types/schedule";
 export type { ScheduleSlotData };
 
 interface ScheduleGridProps {
-  slots: ScheduleSlotData[];
-  onSlotClick: (day: string, period: number) => void;
+  slots?: ScheduleSlotData[];
+  onSlotClick?: (day: string, period: number) => void;
   onSlotDelete?: (day: string, period: number) => void;
   readOnly?: boolean;
+  // New props for direct input mode
+  directInputMode?: boolean;
+  scheduleData?: Record<string, Record<number, string>>;
+  onCellChange?: (day: string, period: number, value: string) => void;
 }
 
-export default function ScheduleGrid({ slots, onSlotClick, onSlotDelete, readOnly = false }: ScheduleGridProps) {
+export default function ScheduleGrid({ 
+  slots, 
+  onSlotClick, 
+  onSlotDelete, 
+  readOnly = false,
+  directInputMode = false,
+  scheduleData,
+  onCellChange
+}: ScheduleGridProps) {
   const getSlot = (day: string, period: number) => {
     return slots?.find((s) => s.day === day && s.period === period);
+  };
+
+  const getCellValue = (day: string, period: number): string => {
+    if (directInputMode && scheduleData) {
+      return scheduleData[day]?.[period] || "";
+    }
+    return "";
   };
 
   return (
@@ -44,14 +64,24 @@ export default function ScheduleGrid({ slots, onSlotClick, onSlotDelete, readOnl
                 </td>
                 {PERIODS.map((period) => {
                   const slot = getSlot(day, period);
+                  const cellValue = getCellValue(day, period);
+                  
                   return (
                     <td key={`${day}-${period}`} className="p-0 w-28 h-20 rounded-md overflow-hidden">
-                      <ScheduleCell
-                        slot={slot}
-                        onClick={() => !readOnly && onSlotClick(day, period)}
-                        onDelete={onSlotDelete ? () => onSlotDelete(day, period) : undefined}
-                        readOnly={readOnly}
-                      />
+                      {directInputMode && onCellChange ? (
+                        <ScheduleCell
+                          value={cellValue}
+                          onValueChange={(value) => onCellChange(day, period, value)}
+                          readOnly={readOnly}
+                        />
+                      ) : (
+                        <ScheduleCell
+                          slot={slot}
+                          onClick={() => !readOnly && onSlotClick?.(day, period)}
+                          onDelete={onSlotDelete ? () => onSlotDelete(day, period) : undefined}
+                          readOnly={readOnly}
+                        />
+                      )}
                     </td>
                   );
                 })}
