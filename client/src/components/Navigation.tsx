@@ -1,13 +1,14 @@
 import { BookOpen, Settings, Users, Table } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
+import { ThemeToggle } from "./ui/theme-toggle";
 
 export default function Navigation() {
   const [location] = useLocation();
 
   const navItems = [
     { path: "/master-schedule", label: "الجدول الرئيسي", icon: Table },
-    { path: "/teachers", label: "المعلمون", icon: Users },
+    { path: "/teachers", label: "المعلمين", icon: Users },
     { path: "/classes", label: "الصفوف", icon: BookOpen },
     { path: "/template-settings", label: "الإعدادات", icon: Settings },
   ];
@@ -39,6 +40,7 @@ export default function Navigation() {
                 </Link>
               );
             })}
+            <ThemeToggle />
           </div>
         </div>
       </div>
