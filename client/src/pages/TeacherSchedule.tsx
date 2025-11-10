@@ -4,7 +4,6 @@ import { ArrowRight, Save, FileDown, GraduationCap, Pencil } from "lucide-react"
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import ScheduleGrid from "@/components/ScheduleGrid";
-import SlotSelectorDialog from "@/components/SlotSelectorDialog";
 import TeacherFormDialog from "@/components/TeacherFormDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,10 +23,6 @@ export default function TeacherSchedule() {
   const { id } = useParams();
 
   const [slots, setSlots] = useState<ScheduleSlotData[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<{
-    day: string;
-    period: number;
-  } | null>(null);
 
   // State for editing teacher info
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -185,38 +180,47 @@ export default function TeacherSchedule() {
     );
   }
 
-  const handleSlotClick = (day: string, period: number) => {
-    setSelectedSlot({ day, period });
-  };
+  // Normalize input: convert "7/12" to "12/7"
+  const normalizeInput = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
 
-  const handleSaveSlot = (grade: number, section: number) => {
-    if (!selectedSlot) return;
+    const parts = trimmed.split("/");
+    if (parts.length !== 2) return trimmed;
 
-    const currentScheduleData = { ...scheduleData };
-    if (!currentScheduleData[selectedSlot.day]) {
-      currentScheduleData[selectedSlot.day] = {};
+    const [first, second] = parts.map((p) => parseInt(p.trim(), 10));
+    if (isNaN(first) || isNaN(second)) return trimmed;
+
+    // Ensure grade is between 10-12
+    if (first >= 10 && first <= 12) {
+      return `${first}/${second}`;
+    } else if (second >= 10 && second <= 12) {
+      return `${second}/${first}`;
     }
-    currentScheduleData[selectedSlot.day][selectedSlot.period] = `${grade}/${section}`;
-    setScheduleData(currentScheduleData);
-    setSelectedSlot(null);
+
+    return trimmed;
   };
 
-  const handleDeleteSlot = (day: string, period: number) => {
-    if (scheduleData[day]?.[period]) {
-      const newScheduleData = { ...scheduleData };
-      delete newScheduleData[day][period];
+  const handleCellChange = (day: string, period: number, value: string) => {
+    const normalized = normalizeInput(value);
 
-      // If a day becomes empty, remove it
-      if (Object.keys(newScheduleData[day]).length === 0) {
-        delete newScheduleData[day];
+    setScheduleData((prev) => {
+      const newData = { ...prev };
+      if (!newData[day]) {
+        newData[day] = {};
       }
-
-      setScheduleData(newScheduleData);
-      toast({
-        title: "تم الحذف",
-        description: "تم حذف الحصة بنجاح",
-      });
-    }
+      
+      if (normalized) {
+        newData[day][period] = normalized;
+      } else {
+        delete newData[day][period];
+        if (Object.keys(newData[day]).length === 0) {
+          delete newData[day];
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const handleSave = () => {
@@ -256,23 +260,6 @@ export default function TeacherSchedule() {
       });
     }
   };
-
-  const existingSlot = selectedSlot
-    ? scheduleData[selectedSlot.day]?.[selectedSlot.period]
-    : undefined;
-
-  const allSlots: ScheduleSlotData[] = Object.entries(scheduleData).flatMap(([day, periods]) =>
-    Object.entries(periods).map(([period, classInfo]) => {
-      const [grade, section] = classInfo.split("/").map(Number);
-      return {
-        day,
-        period: Number(period),
-        grade,
-        section,
-      };
-    })
-  );
-
 
   return (
     <div className="min-h-screen bg-background">
@@ -345,34 +332,13 @@ export default function TeacherSchedule() {
           </div>
 
           <ScheduleGrid
-            slots={Object.entries(scheduleData).flatMap(([day, periods]) =>
-              Object.entries(periods).map(([period, classInfo]) => {
-                const [grade, section] = classInfo.split("/").map(Number);
-                return {
-                  day,
-                  period: Number(period),
-                  grade,
-                  section,
-                };
-              })
-            )}
-            onSlotClick={handleSlotClick}
-            onSlotDelete={handleDeleteSlot}
+            directInputMode={true}
+            scheduleData={scheduleData}
+            onCellChange={handleCellChange}
+            readOnly={false}
           />
         </div>
       </div>
-
-      <SlotSelectorDialog
-        open={!!selectedSlot}
-        onClose={() => setSelectedSlot(null)}
-        onSave={handleSaveSlot}
-        day={selectedSlot?.day || ""}
-        period={selectedSlot?.period || 1}
-        initialGrade={existingSlot ? parseInt(existingSlot.split("/")[0]) : undefined}
-        initialSection={existingSlot ? parseInt(existingSlot.split("/")[1]) : undefined}
-        existingSlots={allSlots}
-        currentSlot={selectedSlot || undefined}
-      />
 
       <TeacherFormDialog
         open={showEditDialog}
