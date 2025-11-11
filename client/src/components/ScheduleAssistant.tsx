@@ -91,7 +91,7 @@ export function ScheduleAssistant({ allSlots }: ScheduleAssistantProps) {
           <div className="text-center py-8">
             <div className="text-green-500 text-5xl mb-3">✓</div>
             <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-              رائع! جميع الحصص مكتملة
+               جميع الحصص مكتمله
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               لا توجد حصص ناقصة في أي صف
