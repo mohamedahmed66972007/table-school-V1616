@@ -3,8 +3,8 @@ import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { DAYS, PERIODS } from "@shared/schema";
-import type { Teacher, ScheduleSlot, Day, Period } from "@shared/schema";
+import { DAYS, PERIODS, SUBJECTS, getSubjectDisplayName } from "@shared/schema";
+import type { Teacher, ScheduleSlot, Day, Period, Subject, Grade } from "@shared/schema";
 import { AlertTriangle, Save } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -38,7 +38,7 @@ export function EditableClassSchedule({
     mutationFn: async (changedSlots: { day: Day; period: Period; teacherId: string }[]) => {
       // بناء الحصص الكاملة بناءً على التغييرات الحالية
       const fullSlots: any[] = [];
-      
+
       DAYS.forEach((day) => {
         PERIODS.forEach((period) => {
           const teacherId = getTeacherForSlot(day, period);
@@ -231,7 +231,11 @@ export function EditableClassSchedule({
                             <SelectValue placeholder="اختر معلم">
                               {teacher ? (
                                 <div className="text-sm">
-                                  <div className="font-semibold">{teacher.subject}</div>
+                                  <div className="font-medium text-sm">
+                                    {teacher.subject
+                                      ? getSubjectDisplayName(teacher.subject, grade)
+                                      : ""}
+                                  </div>
                                   <div className="text-xs text-muted-foreground">
                                     {teacher.name}
                                   </div>
