@@ -27,7 +27,7 @@ export async function importMasterScheduleExcel(
   const arrayBuffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(arrayBuffer);
-  
+
   const worksheet = workbook.worksheets[0];
   if (!worksheet) {
     throw new Error("الملف لا يحتوي على أي ورقة عمل");
@@ -42,26 +42,26 @@ export async function importMasterScheduleExcel(
 
   for (let rowNum = startRow; rowNum <= endRow; rowNum++) {
     const row = worksheet.getRow(rowNum);
-    
+
     const teacherNameCell = row.getCell(40);
     const subjectCell = row.getCell(39);
-    
+
     const teacherName = teacherNameCell.value?.toString().trim();
     const subjectName = subjectCell.value?.toString().trim();
-    
+
     if (!teacherName || !subjectName) {
       continue;
     }
 
     const subject = SUBJECTS.find(s => s === subjectName) || "عربي" as Subject;
-    
+
     const teacherId = nanoid();
     const teacher: Teacher = {
       id: teacherId,
       name: teacherName,
       subject: subject,
     };
-    
+
     teachersMap.set(teacherName, teacher);
 
     let colOffset = 3;
@@ -69,13 +69,13 @@ export async function importMasterScheduleExcel(
       [...PERIODS].reverse().forEach((period) => {
         const cell = row.getCell(colOffset);
         const cellValue = cell.value?.toString().trim();
-        
+
         if (cellValue && cellValue.includes('/')) {
           const parts = cellValue.split('/');
           if (parts.length === 2) {
             const grade = parseInt(parts[0], 10);
             const section = parseInt(parts[1], 10);
-            
+
             if (!isNaN(grade) && !isNaN(section) && grade >= 10 && grade <= 12) {
               const slot: ScheduleSlot = {
                 id: nanoid(),
@@ -119,6 +119,19 @@ export async function importMasterScheduleExcel(
   };
 }
 
+// Helper function to get the display name of the subject based on grade
+function getSubjectDisplayName(subject: Subject, grade: Grade): Subject {
+  if (grade === 10) {
+    return "اجتماعيات";
+  } else if (grade === 11) {
+    return "جيولوجيا";
+  } else if (grade === 12) {
+    return "دستور";
+  }
+  return subject; // Default to the original subject name if grade is not 10, 11, or 12
+}
+
+
 export async function exportToExcelWithMergedCells(
   teachers: Teacher[],
   allSlots: ScheduleSlot[],
@@ -129,10 +142,10 @@ export async function exportToExcelWithMergedCells(
   if (type === "teachers") {
     for (const teacher of teachers) {
       const worksheet = workbook.addWorksheet(teacher.name.substring(0, 30));
-      
+
       worksheet.getCell('D1').value = `جدول المعلم: ${teacher.name}`;
       worksheet.getCell('D1').font = { bold: true, size: 14 };
-      
+
       worksheet.getCell('B3').value = 'الأيام/الحصص';
       const periodsHeader = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة'];
       periodsHeader.forEach((period, idx) => {
@@ -141,7 +154,7 @@ export async function exportToExcelWithMergedCells(
 
       DAYS.forEach((day, dayIdx) => {
         worksheet.getCell(4 + dayIdx, 2).value = day;
-        
+
         const teacherSlots = allSlots.filter(
           s => s.teacherId === teacher.id && s.day === day
         ).sort((a, b) => a.period - b.period);
@@ -153,10 +166,10 @@ export async function exportToExcelWithMergedCells(
         for (let period = 1; period <= 7; period++) {
           const slot = teacherSlots.find(s => s.period === period);
           const colIdx = 2 + period;
-          
+
           if (slot) {
             const value = `${slot.grade}/${slot.section}`;
-            
+
             if (mergeStart !== null && mergeValue === value && period === lastPeriod + 1) {
               lastPeriod = period;
             } else {
@@ -167,7 +180,7 @@ export async function exportToExcelWithMergedCells(
               } else if (mergeStart !== null) {
                 worksheet.getCell(4 + dayIdx, 2 + mergeStart).value = mergeValue;
               }
-              
+
               mergeStart = period;
               mergeValue = value;
               lastPeriod = period;
@@ -180,7 +193,7 @@ export async function exportToExcelWithMergedCells(
             } else if (mergeStart !== null) {
               worksheet.getCell(4 + dayIdx, 2 + mergeStart).value = mergeValue;
             }
-            
+
             mergeStart = null;
             mergeValue = '';
             lastPeriod = 0;
@@ -209,7 +222,7 @@ export async function exportToExcelWithMergedCells(
     }
   } else {
     const teacherMap = new Map(teachers.map(t => [t.id, t]));
-    
+
     for (let grade = 10; grade <= 12; grade++) {
       const sectionsSet = new Set(
         allSlots.filter(s => s.grade === grade).map(s => s.section)
@@ -218,10 +231,10 @@ export async function exportToExcelWithMergedCells(
 
       for (const section of sections) {
         const worksheet = workbook.addWorksheet(`${grade}/${section}`);
-        
+
         worksheet.getCell('D1').value = `جدول الصف: ${grade}/${section}`;
         worksheet.getCell('D1').font = { bold: true, size: 14 };
-        
+
         worksheet.getCell('B3').value = 'الأيام/الحصص';
         const periodsHeader = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة'];
         periodsHeader.forEach((period, idx) => {
@@ -230,7 +243,7 @@ export async function exportToExcelWithMergedCells(
 
         DAYS.forEach((day, dayIdx) => {
           worksheet.getCell(4 + dayIdx, 2).value = day;
-          
+
           const classSlots = allSlots.filter(
             s => s.grade === grade && s.section === section && s.day === day
           ).sort((a, b) => a.period - b.period);
@@ -241,11 +254,13 @@ export async function exportToExcelWithMergedCells(
 
           for (let period = 1; period <= 7; period++) {
             const slot = classSlots.find(s => s.period === period);
-            
+
             if (slot) {
               const teacher = teacherMap.get(slot.teacherId);
-              const value = teacher?.subject || 'عربي';
-              
+              const value = teacher?.subject
+                ? getSubjectDisplayName(teacher.subject, grade as Grade)
+                : 'عربي';
+
               if (mergeStart !== null && mergeValue === value && period === lastPeriod + 1) {
                 lastPeriod = period;
               } else {
@@ -256,7 +271,7 @@ export async function exportToExcelWithMergedCells(
                 } else if (mergeStart !== null) {
                   worksheet.getCell(4 + dayIdx, 2 + mergeStart).value = mergeValue;
                 }
-                
+
                 mergeStart = period;
                 mergeValue = value;
                 lastPeriod = period;
@@ -269,7 +284,7 @@ export async function exportToExcelWithMergedCells(
               } else if (mergeStart !== null) {
                 worksheet.getCell(4 + dayIdx, 2 + mergeStart).value = mergeValue;
               }
-              
+
               mergeStart = null;
               mergeValue = '';
               lastPeriod = 0;
@@ -300,7 +315,7 @@ export async function exportToExcelWithMergedCells(
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
-  return new Blob([buffer], { 
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
 }
