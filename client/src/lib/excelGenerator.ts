@@ -1,8 +1,8 @@
 import ExcelJS from "exceljs";
-import type { Teacher, ScheduleSlot } from "@shared/schema";
+import type { Teacher, ScheduleSlot, Grade } from "@shared/schema";
 import type { ScheduleSlotData } from "@/types/schedule";
 import type { ClassScheduleSlot } from "@/components/ClassScheduleTable";
-import { DAYS, PERIODS } from "@shared/schema";
+import { DAYS, PERIODS, getSubjectDisplayName } from "@shared/schema";
 import { TemplateManager } from "./templateManager";
 
 async function loadActiveTemplate(): Promise<ArrayBuffer> {
@@ -426,7 +426,7 @@ export async function exportClassScheduleExcel(
 
       [...PERIODS].forEach((period) => {
         const slot = slots.find((s) => s.day === day && s.period === period);
-        periodValues.push(slot ? slot.subject : '');
+        periodValues.push(slot ? getSubjectDisplayName(slot.subject, grade as Grade) : '');
       });
 
       periodValues.forEach((value, idx) => {
@@ -593,7 +593,10 @@ export async function exportAllClassesExcel(
             const slot = classSlots.find((s) => s.day === day && s.period === period);
             if (slot) {
               const teacher = teacherMap.get(slot.teacherId);
-              periodValues.push(teacher?.subject || '');
+              const subjectName = teacher?.subject 
+                ? getSubjectDisplayName(teacher.subject, slot.grade as Grade)
+                : '';
+              periodValues.push(subjectName);
             } else {
               periodValues.push('');
             }
