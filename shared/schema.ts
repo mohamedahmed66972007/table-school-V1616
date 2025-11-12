@@ -16,6 +16,18 @@ export const SUBJECTS = [
   "فنية",
 ] as const;
 
+export type Subject = (typeof SUBJECTS)[number];
+
+// Map subject names based on grade level
+export function getSubjectDisplayName(subject: Subject, grade: Grade): string {
+  if (subject === "اجتماعيات") {
+    if (grade === 10) return "اجتماعيات";
+    if (grade === 11) return "جيولوجيا";
+    if (grade === 12) return "دستور";
+  }
+  return subject;
+}
+
 export const DEFAULT_TEACHERS = [
   { name: "إبراهيم علي عبد العزيز", subject: "إسلامية" as const },
   { name: "محمد علي علي الشرقاوي", subject: "إسلامية" as const },
@@ -77,7 +89,6 @@ export const GRADES = [10, 11, 12] as const;
 
 export const SECTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 
-export type Subject = typeof SUBJECTS[number];
 export type Day = typeof DAYS[number];
 export type Period = typeof PERIODS[number];
 export type Grade = typeof GRADES[number];
