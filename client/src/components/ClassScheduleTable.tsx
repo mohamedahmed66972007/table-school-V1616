@@ -1,6 +1,6 @@
 import { Card } from "./ui/card";
-import { DAYS, PERIODS } from "@shared/schema";
-import type { Subject } from "@shared/schema";
+import { DAYS, PERIODS, getSubjectDisplayName } from "@shared/schema";
+import type { Day, Period, Subject, Grade } from "@shared/schema";
 
 export interface ClassScheduleSlot {
   day: string;
@@ -68,7 +68,7 @@ export default function ClassScheduleTable({
                         {slot ? (
                           <div className="space-y-1">
                             <div className="font-semibold text-primary font-heading">
-                              {slot.subject}
+                              {getSubjectDisplayName(slot.subject, grade as Grade)}
                             </div>
                             {showTeacherNames && slot.teacherName && (
                               <div className="text-xs text-muted-foreground font-accent">
