@@ -311,14 +311,14 @@ export default function Classes() {
       </div>
 
       <Dialog open={sectionsDialogOpen} onOpenChange={setSectionsDialogOpen}>
-        <DialogContent className="max-w-2xl" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[70vh]" dir="rtl">
           <DialogHeader>
             <DialogTitle className="font-heading">إدارة الشعب</DialogTitle>
             <DialogDescription className="font-accent">
               إضافة أو حذف شعب لكل صف دراسي
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 overflow-y-auto max-h-[calc(70vh-180px)]">
             {GRADES.map((grade) => (
               <div key={grade} className="space-y-3">
                 <div className="flex items-center justify-between">
