@@ -1,7 +1,6 @@
 import ExcelJS from "exceljs";
 import type { Teacher, ScheduleSlot, Day, Period, Subject, Grade } from "@shared/schema";
-import { DAYS, SUBJECTS } from "@shared/schema";
-import { getActivePeriods } from "./scheduleConfig";
+import { DAYS, PERIODS, SUBJECTS, getSubjectDisplayName as sharedGetSubjectDisplayName } from "@shared/schema";
 import { nanoid } from "nanoid";
 
 export interface ImportedData {
@@ -65,7 +64,6 @@ export async function importMasterScheduleExcel(
 
     teachersMap.set(teacherName, teacher);
 
-    const PERIODS = getActivePeriods();
     let colOffset = 3;
     [...DAYS].reverse().forEach((day) => {
       [...PERIODS].reverse().forEach((period) => {
@@ -122,15 +120,9 @@ export async function importMasterScheduleExcel(
 }
 
 // Helper function to get the display name of the subject based on grade
-function getSubjectDisplayName(subject: Subject, grade: Grade): Subject {
-  if (grade === 10) {
-    return "اجتماعيات";
-  } else if (grade === 11) {
-    return "جيولوجيا";
-  } else if (grade === 12) {
-    return "دستور";
-  }
-  return subject; // Default to the original subject name if grade is not 10, 11, or 12
+// Only "اجتماعيات" gets renamed per grade (جيولوجيا for 11, دستور for 12)
+function getSubjectDisplayName(subject: Subject, grade: Grade): string {
+  return sharedGetSubjectDisplayName(subject, grade);
 }
 
 
