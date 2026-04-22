@@ -5,8 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DAYS, PERIODS } from "@shared/schema";
+import { DAYS } from "@shared/schema";
 import type { Teacher, ScheduleSlot, Day, Period } from "@shared/schema";
+import { useActivePeriods, usePeriodsCount } from "@/lib/scheduleConfig";
+import { Link } from "wouter";
+import { Users, BookOpen, Settings as SettingsIcon } from "lucide-react";
 import { Save, Download, AlertCircle, Upload } from "lucide-react";
 import {
   AlertDialog,
@@ -43,6 +46,8 @@ type Conflict = {
 };
 
 export default function MasterSchedule() {
+  const PERIODS = useActivePeriods();
+  const periodsCount = usePeriodsCount();
   const [scheduleData, setScheduleData] = useState<ScheduleData>({});
   const [teacherNotes, setTeacherNotes] = useState<TeacherNotes>({});
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
@@ -408,7 +413,32 @@ export default function MasterSchedule() {
           </div>
         </div>
 
-        <Card className="p-4 overflow-x-auto">
+        <div className="block md:hidden">
+          <Card className="p-6 space-y-3 text-center">
+            <p className="text-muted-foreground text-sm">
+              الجدول الرئيسي مخصص لشاشات الكمبيوتر للحصول على عرض أوضح. يمكنك من هاتفك إدارة المعلمين والصفوف والإعدادات من هنا:
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              <Link href="/teachers">
+                <Button variant="outline" className="w-full justify-start gap-2">
+                  <Users className="h-4 w-4" /> المعلمين
+                </Button>
+              </Link>
+              <Link href="/classes">
+                <Button variant="outline" className="w-full justify-start gap-2">
+                  <BookOpen className="h-4 w-4" /> الصفوف
+                </Button>
+              </Link>
+              <Link href="/template-settings">
+                <Button variant="outline" className="w-full justify-start gap-2">
+                  <SettingsIcon className="h-4 w-4" /> الإعدادات
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
+
+        <Card className="p-4 overflow-x-auto hidden md:block">
           <table className="w-full border-collapse text-sm" dir="rtl">
             <thead>
               <tr className="border-b-2 border-primary">
@@ -417,7 +447,7 @@ export default function MasterSchedule() {
                 </th>
                 <th className="p-2 bg-primary/10 min-w-[80px]">المادة</th>
                 {DAYS.map((day) => (
-                  <th key={day} colSpan={7} className="p-2 bg-primary/10 border-r-2">
+                  <th key={day} colSpan={periodsCount} className="p-2 bg-primary/10 border-r-2">
                     {day}
                   </th>
                 ))}

@@ -84,13 +84,14 @@ export const DEFAULT_TEACHERS = [
 export const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"] as const;
 
 export const PERIODS = [1, 2, 3, 4, 5, 6, 7] as const;
+export const MAX_PERIODS = 12;
 
 export const GRADES = [10, 11, 12] as const;
 
 export const SECTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 export type Day = typeof DAYS[number];
-export type Period = typeof PERIODS[number];
+export type Period = number;
 export type Grade = typeof GRADES[number];
 export type Section = typeof SECTIONS[number] | number;
 
@@ -121,7 +122,7 @@ export const insertTeacherSchema = createInsertSchema(teachers).omit({ id: true 
 
 export const insertScheduleSlotSchema = createInsertSchema(scheduleSlots).omit({ id: true }).extend({
   day: z.enum(DAYS),
-  period: z.number().int().min(1).max(7),
+  period: z.number().int().min(1).max(MAX_PERIODS),
   grade: z.number().int().min(10).max(12),
   section: z.number().int().min(1),
   teacherId: z.string(),

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HelpCircle, X, AlertTriangle } from "lucide-react";
-import { DAYS, PERIODS, GRADES } from "@shared/schema";
+import { DAYS, GRADES } from "@shared/schema";
+import { useActivePeriods } from "@/lib/scheduleConfig";
 import type { ScheduleSlot } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,6 +21,7 @@ interface MissingSlot {
 
 export function ScheduleAssistant({ allSlots }: ScheduleAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const PERIODS = useActivePeriods();
 
   const { data: gradeSections = {} } = useQuery<Record<string, number[]>>({
     queryKey: ["/api/grade-sections"],

@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import type { Teacher, ScheduleSlot, Day, Period, Subject, Grade } from "@shared/schema";
-import { DAYS, PERIODS, SUBJECTS } from "@shared/schema";
+import { DAYS, SUBJECTS } from "@shared/schema";
+import { getActivePeriods } from "./scheduleConfig";
 import { nanoid } from "nanoid";
 
 export interface ImportedData {
@@ -64,6 +65,7 @@ export async function importMasterScheduleExcel(
 
     teachersMap.set(teacherName, teacher);
 
+    const PERIODS = getActivePeriods();
     let colOffset = 3;
     [...DAYS].reverse().forEach((day) => {
       [...PERIODS].reverse().forEach((period) => {

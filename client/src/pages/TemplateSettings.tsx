@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { TemplateManager, type Template } from "@/lib/templateManager";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { usePeriodsCount, setPeriodsCount } from "@/lib/scheduleConfig";
+import { MAX_PERIODS } from "@shared/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -129,6 +133,18 @@ export default function TemplateSettings() {
 
             </div>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>إعدادات الحصص اليومية</CardTitle>
+              <CardDescription>
+                حدد عدد الحصص في اليوم الواحد. سيتم تطبيقه على جميع الجداول والتصدير.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PeriodsCountSetting />
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -312,6 +328,53 @@ export default function TemplateSettings() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PeriodsCountSetting() {
+  const current = usePeriodsCount();
+  const [value, setValue] = useState<string>(String(current));
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setValue(String(current));
+  }, [current]);
+
+  const handleSave = () => {
+    const n = parseInt(value, 10);
+    if (isNaN(n) || n < 1 || n > MAX_PERIODS) {
+      toast({
+        title: "قيمة غير صالحة",
+        description: `يجب أن يكون عدد الحصص بين 1 و ${MAX_PERIODS}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setPeriodsCount(n);
+    toast({
+      title: "تم الحفظ",
+      description: `تم تحديث عدد الحصص إلى ${n}`,
+    });
+  };
+
+  return (
+    <div className="flex items-end gap-3 max-w-md">
+      <div className="flex-1">
+        <Label htmlFor="periods-count">عدد الحصص (1-{MAX_PERIODS})</Label>
+        <Input
+          id="periods-count"
+          type="number"
+          min={1}
+          max={MAX_PERIODS}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          data-testid="input-periods-count"
+        />
+      </div>
+      <Button onClick={handleSave} data-testid="button-save-periods">
+        حفظ
+      </Button>
     </div>
   );
 }

@@ -3,7 +3,8 @@ import autoTable from "jspdf-autotable";
 import type { Teacher, ScheduleSlot } from "@shared/schema";
 import type { ScheduleSlotData } from "@/types/schedule";
 import type { ClassScheduleSlot } from "@/components/ClassScheduleTable";
-import { DAYS, PERIODS } from "@shared/schema";
+import { DAYS } from "@shared/schema";
+import { getActivePeriods } from "./scheduleConfig";
 import { loadArabicFont, loadMultipleFonts } from "./arabicFont";
 import type { PDFCustomizationOptions } from "@/types/pdfCustomization";
 import { DEFAULT_PDF_OPTIONS } from "@/types/pdfCustomization";
@@ -13,6 +14,7 @@ export async function exportTeacherSchedulePDF(
   slots: ScheduleSlotData[],
   customOptions?: PDFCustomizationOptions
 ) {
+  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -97,6 +99,7 @@ export async function exportClassSchedulePDF(
   showTeacherNames: boolean,
   customOptions?: PDFCustomizationOptions
 ) {
+  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -171,6 +174,7 @@ export async function exportAllTeachersPDF(
   allSlots: ScheduleSlot[],
   customOptions?: PDFCustomizationOptions
 ) {
+  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -280,6 +284,7 @@ export async function exportAllClassesPDF(
   customOptions?: PDFCustomizationOptions,
   gradeSections?: Record<string, number[]>
 ) {
+  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -426,6 +431,7 @@ export async function exportMasterSchedulePDF(
   teacherNotes: Record<string, string>,
   customOptions?: PDFCustomizationOptions
 ) {
+  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",

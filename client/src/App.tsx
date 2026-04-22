@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navigation from "@/components/Navigation";
+import { useEffect } from "react";
+import { applyColorTheme, getColorTheme } from "@/lib/scheduleConfig";
 import Teachers from "@/pages/Teachers";
 import TeacherSchedule from "@/pages/TeacherSchedule";
 import MasterSchedule from "@/pages/MasterSchedule";
@@ -29,6 +31,9 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    applyColorTheme(getColorTheme());
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider 

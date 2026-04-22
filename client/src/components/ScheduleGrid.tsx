@@ -1,6 +1,7 @@
 
 import { Card } from "./ui/card";
-import { DAYS, PERIODS } from "@shared/schema";
+import { DAYS } from "@shared/schema";
+import { useActivePeriods } from "@/lib/scheduleConfig";
 import ScheduleCell from "./ScheduleCell";
 import type { ScheduleSlotData } from "@/types/schedule";
 
@@ -26,6 +27,7 @@ export default function ScheduleGrid({
   scheduleData,
   onCellChange
 }: ScheduleGridProps) {
+  const PERIODS = useActivePeriods();
   const getSlot = (day: string, period: number) => {
     return slots?.find((s) => s.day === day && s.period === period);
   };

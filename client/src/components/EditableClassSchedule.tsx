@@ -3,7 +3,8 @@ import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { DAYS, PERIODS, SUBJECTS, getSubjectDisplayName } from "@shared/schema";
+import { DAYS, SUBJECTS, getSubjectDisplayName } from "@shared/schema";
+import { useActivePeriods, getActivePeriods } from "@/lib/scheduleConfig";
 import type { Teacher, ScheduleSlot, Day, Period, Subject, Grade } from "@shared/schema";
 import { AlertTriangle, Save } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ export function EditableClassSchedule({
   const [editedSlots, setEditedSlots] = useState<Map<string, string>>(new Map());
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const PERIODS = useActivePeriods();
 
   const saveSlotsMutation = useMutation({
     mutationFn: async (changedSlots: { day: Day; period: Period; teacherId: string }[]) => {

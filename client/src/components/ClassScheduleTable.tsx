@@ -1,6 +1,7 @@
 import { Card } from "./ui/card";
-import { DAYS, PERIODS, getSubjectDisplayName } from "@shared/schema";
+import { DAYS, getSubjectDisplayName } from "@shared/schema";
 import type { Day, Period, Subject, Grade } from "@shared/schema";
+import { useActivePeriods } from "@/lib/scheduleConfig";
 
 export interface ClassScheduleSlot {
   day: string;
@@ -22,6 +23,7 @@ export default function ClassScheduleTable({
   slots,
   showTeacherNames,
 }: ClassScheduleTableProps) {
+  const PERIODS = useActivePeriods();
   const getSlot = (day: string, period: number) => {
     return slots.find((s) => s.day === day && s.period === period);
   };

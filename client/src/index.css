@@ -186,6 +186,72 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+/* COLOR THEMES */
+:root.theme-blue,
+:root:not(.theme-red):not(.theme-green):not(.theme-yellow):not(.theme-orange):not(.theme-purple):not(.theme-pink):not(.theme-teal) {
+  --primary: 215 75% 28%;
+  --ring: 215 75% 55%;
+  --sidebar-primary: 215 75% 28%;
+  --sidebar-ring: 215 75% 55%;
+}
+:root.theme-red {
+  --primary: 0 72% 42%;
+  --ring: 0 72% 55%;
+  --sidebar-primary: 0 72% 42%;
+  --sidebar-ring: 0 72% 55%;
+}
+:root.theme-green {
+  --primary: 142 65% 32%;
+  --ring: 142 65% 50%;
+  --sidebar-primary: 142 65% 32%;
+  --sidebar-ring: 142 65% 50%;
+}
+:root.theme-yellow {
+  --primary: 42 90% 38%;
+  --ring: 42 90% 55%;
+  --sidebar-primary: 42 90% 38%;
+  --sidebar-ring: 42 90% 55%;
+}
+:root.theme-orange {
+  --primary: 24 90% 42%;
+  --ring: 24 90% 55%;
+  --sidebar-primary: 24 90% 42%;
+  --sidebar-ring: 24 90% 55%;
+}
+:root.theme-purple {
+  --primary: 270 60% 42%;
+  --ring: 270 60% 60%;
+  --sidebar-primary: 270 60% 42%;
+  --sidebar-ring: 270 60% 60%;
+}
+:root.theme-pink {
+  --primary: 330 70% 45%;
+  --ring: 330 70% 60%;
+  --sidebar-primary: 330 70% 45%;
+  --sidebar-ring: 330 70% 60%;
+}
+:root.theme-teal {
+  --primary: 175 70% 32%;
+  --ring: 175 70% 50%;
+  --sidebar-primary: 175 70% 32%;
+  --sidebar-ring: 175 70% 50%;
+}
+
+.dark.theme-blue,
+.dark:not(.theme-red):not(.theme-green):not(.theme-yellow):not(.theme-orange):not(.theme-purple):not(.theme-pink):not(.theme-teal) {
+  --primary: 215 85% 32%;
+  --ring: 215 85% 60%;
+  --sidebar-primary: 215 85% 32%;
+  --sidebar-ring: 215 85% 60%;
+}
+.dark.theme-red { --primary: 0 75% 50%; --ring: 0 75% 65%; --sidebar-primary: 0 75% 50%; --sidebar-ring: 0 75% 65%; }
+.dark.theme-green { --primary: 142 70% 42%; --ring: 142 70% 60%; --sidebar-primary: 142 70% 42%; --sidebar-ring: 142 70% 60%; }
+.dark.theme-yellow { --primary: 42 95% 50%; --ring: 42 95% 65%; --sidebar-primary: 42 95% 50%; --sidebar-ring: 42 95% 65%; }
+.dark.theme-orange { --primary: 24 95% 52%; --ring: 24 95% 65%; --sidebar-primary: 24 95% 52%; --sidebar-ring: 24 95% 65%; }
+.dark.theme-purple { --primary: 270 70% 55%; --ring: 270 70% 70%; --sidebar-primary: 270 70% 55%; --sidebar-ring: 270 70% 70%; }
+.dark.theme-pink { --primary: 330 75% 55%; --ring: 330 75% 70%; --sidebar-primary: 330 75% 55%; --sidebar-ring: 330 75% 70%; }
+.dark.theme-teal { --primary: 175 75% 42%; --ring: 175 75% 60%; --sidebar-primary: 175 75% 42%; --sidebar-ring: 175 75% 60%; }
+
 @layer base {
   * {
     @apply border-border;

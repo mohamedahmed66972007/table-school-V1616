@@ -9,32 +9,32 @@ export interface Template {
 
 const BUILT_IN_TEMPLATES: Template[] = [
   {
-    id: "template-1",
-    name: "القالب الأول",
+    id: "template-basic",
+    name: "أساسي",
     isBuiltIn: true,
-    previewUrl: "/template-previews/preview_1.png",
-    fileUrl: "/templates/قالب_1.xlsx",
+    previewUrl: "/template-previews/أساسي.png",
+    fileUrl: "/templates/أساسي.xlsx",
   },
   {
-    id: "template-2",
-    name: "القالب الثاني",
+    id: "template-yellow",
+    name: "أصفر",
     isBuiltIn: true,
-    previewUrl: "/template-previews/preview_2.png",
-    fileUrl: "/templates/قالب_2.xlsx",
+    previewUrl: "/template-previews/أصفر.png",
+    fileUrl: "/templates/أصفر.xlsx",
   },
   {
-    id: "template-3",
-    name: "القالب الثالث",
+    id: "template-red",
+    name: "أحمر",
     isBuiltIn: true,
-    previewUrl: "/template-previews/preview_3.png",
-    fileUrl: "/templates/قالب_3.xlsx",
+    previewUrl: "/template-previews/أحمر.png",
+    fileUrl: "/templates/أحمر.xlsx",
   },
   {
-    id: "template-4",
-    name: "القالب الرابع",
+    id: "template-green",
+    name: "أخضر",
     isBuiltIn: true,
-    previewUrl: "/template-previews/preview_4.png",
-    fileUrl: "/templates/قالب_4.xlsx",
+    previewUrl: "/template-previews/أخضر.png",
+    fileUrl: "/templates/أخضر.xlsx",
   },
 ];
 
@@ -64,13 +64,13 @@ export class TemplateManager {
   static saveCustomTemplate(template: Template): void {
     const templates = this.getCustomTemplates();
     const existingIndex = templates.findIndex((t) => t.id === template.id);
-    
+
     if (existingIndex >= 0) {
       templates[existingIndex] = template;
     } else {
       templates.push(template);
     }
-    
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
   }
 
@@ -78,14 +78,18 @@ export class TemplateManager {
     const templates = this.getCustomTemplates();
     const filtered = templates.filter((t) => t.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    
+
     if (this.getActiveTemplateId() === id) {
       this.setActiveTemplate(BUILT_IN_TEMPLATES[0].id);
     }
   }
 
   static getActiveTemplateId(): string {
-    return localStorage.getItem(ACTIVE_TEMPLATE_KEY) || BUILT_IN_TEMPLATES[0].id;
+    const stored = localStorage.getItem(ACTIVE_TEMPLATE_KEY);
+    if (stored && this.getAllTemplates().some((t) => t.id === stored)) {
+      return stored;
+    }
+    return BUILT_IN_TEMPLATES[0].id;
   }
 
   static setActiveTemplate(id: string): void {
@@ -100,25 +104,25 @@ export class TemplateManager {
   static async addCustomTemplateFromFile(file: File): Promise<Template> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         const base64Data = e.target?.result as string;
-        
+
         const template: Template = {
           id: `custom-${Date.now()}`,
           name: file.name.replace('.xlsx', ''),
           isBuiltIn: false,
           fileData: base64Data,
         };
-        
+
         this.saveCustomTemplate(template);
         resolve(template);
       };
-      
+
       reader.onerror = () => {
         reject(new Error("Failed to read file"));
       };
-      
+
       reader.readAsDataURL(file);
     });
   }

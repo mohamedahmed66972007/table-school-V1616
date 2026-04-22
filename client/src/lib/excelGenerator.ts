@@ -2,8 +2,20 @@ import ExcelJS from "exceljs";
 import type { Teacher, ScheduleSlot, Grade } from "@shared/schema";
 import type { ScheduleSlotData } from "@/types/schedule";
 import type { ClassScheduleSlot } from "@/components/ClassScheduleTable";
-import { DAYS, PERIODS, getSubjectDisplayName } from "@shared/schema";
+import { DAYS, getSubjectDisplayName } from "@shared/schema";
 import { TemplateManager } from "./templateManager";
+import { getActivePeriods, getPeriodsCount } from "./scheduleConfig";
+
+// قالب القوالب الجديدة:
+// - عنوان مدمج في B3:I4 (الصف 3 العمود 2)
+// - رؤوس الحصص في الصف 5، الأعمدة C-I (الأعمدة 3-9)
+// - أيام الأسبوع: الصفوف 6-10، تسميات الأيام في العمود B (العمود 2)
+// - بيانات الجدول: الأعمدة 3-9 (C-I) للحصص 1-7
+const TITLE_ROW = 3;
+const TITLE_COL = 2;
+const FIRST_DATA_ROW = 6;
+const FIRST_PERIOD_COL = 3;
+const TEMPLATE_PERIODS = 7;
 
 async function loadActiveTemplate(): Promise<ArrayBuffer> {
   const activeTemplate = TemplateManager.getActiveTemplate();
@@ -16,85 +28,86 @@ async function loadActiveTemplate(): Promise<ArrayBuffer> {
   return await blob.arrayBuffer();
 }
 
-// =====================================================
-// ================ الجدول الرئيسي ======================
-// =====================================================
+// حذف أعمدة الحصص الزائدة من القالب لتطابق عدد الحصص الفعلي
+function trimWorksheetPeriods(worksheet: ExcelJS.Worksheet, periodsCount: number) {
+  if (periodsCount >= TEMPLATE_PERIODS) return;
+  const toRemove = TEMPLATE_PERIODS - periodsCount;
+  // الأعمدة المراد حذفها (من اليمين): تبدأ من العمود (FIRST_PERIOD_COL + periodsCount)
+  const startCol = FIRST_PERIOD_COL + periodsCount;
+  worksheet.spliceColumns(startCol, toRemove);
+}
+
 export async function exportMasterScheduleExcel(
   teachers: Teacher[],
-  slots: ScheduleSlot[]
+  slots: ScheduleSlot[],
+  _teacherNotes?: Record<string, string>
 ) {
   try {
-    const arrayBuffer = await loadActiveTemplate();
+    const PERIODS = getActivePeriods();
 
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(arrayBuffer);
-    const worksheet = workbook.getWorksheet(1);
+    const worksheet = workbook.addWorksheet("الجدول الرئيسي", {
+      views: [{ rightToLeft: true }],
+      pageSetup: { orientation: "landscape", paperSize: 8, fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
 
-    if (!worksheet) {
-      throw new Error('Template worksheet not found');
-    }
+    // الصف الأول: عنوان
+    worksheet.getRow(1).getCell(1).value = "الجدول الرئيسي - جميع المعلمين";
+    worksheet.getRow(1).getCell(1).font = { bold: true, size: 14 };
 
-    const headerRow = worksheet.getRow(4);
-    const dayHeaders: string[] = [];
-    [...DAYS].reverse().forEach((day) => {
+    // الصف الثاني: رؤوس الأعمدة
+    const headerRow = worksheet.getRow(2);
+    headerRow.getCell(1).value = "اسم المعلم";
+    headerRow.getCell(2).value = "المادة";
+    let col = 3;
+    DAYS.forEach((day) => {
       PERIODS.forEach((period) => {
-        dayHeaders.push(`${day} ${period}`);
+        const c = headerRow.getCell(col);
+        c.value = `${day} - ${period}`;
+        c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        c.font = { bold: true };
+        col++;
       });
     });
-    headerRow.push(...dayHeaders);
-    headerRow.push("مجموع الحصص");
-    headerRow.push("10", "11", "12");
+    headerRow.getCell(col).value = "مجموع الحصص";
+    headerRow.getCell(col + 1).value = "10";
+    headerRow.getCell(col + 2).value = "11";
+    headerRow.getCell(col + 3).value = "12";
+    headerRow.font = { bold: true };
 
-    worksheet.addRow(headerRow);
-
-    teachers.forEach((teacher, index) => {
-      const rowNum = index + 5;
-
-      let colOffset = 3;
-      [...DAYS].reverse().forEach((day) => {
-        [...PERIODS].reverse().forEach((period) => {
+    // صفوف بيانات المعلمين
+    teachers.forEach((teacher, idx) => {
+      const row = worksheet.getRow(idx + 3);
+      row.getCell(1).value = teacher.name;
+      row.getCell(2).value = teacher.subject;
+      let c = 3;
+      DAYS.forEach((day) => {
+        PERIODS.forEach((period) => {
           const slot = slots.find(
             (s) => s.teacherId === teacher.id && s.day === day && s.period === period
           );
-
-          if (slot) {
-            const cell = worksheet.getRow(rowNum).getCell(colOffset);
-            cell.value = `${slot.grade}/${slot.section}`;
-          }
-          colOffset++;
+          row.getCell(c).value = slot ? `${slot.grade}/${slot.section}` : "";
+          row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
+          c++;
         });
       });
-
-      const row: any[] = [teacher.name, teacher.subject];
-
-      [...DAYS].reverse().forEach((day) => {
-        PERIODS.forEach((period) => {
-          const slot = slots.find(
-            (s) =>
-              s.teacherId === teacher.id &&
-              s.day === day &&
-              s.period === period
-          );
-          row.push(slot ? `${slot.grade}/${slot.section}` : "");
-        });
-      });
-
-      // Add teacher weekly hours
       const teacherSlots = slots.filter((s) => s.teacherId === teacher.id);
-      row.push(teacherSlots.length);
-
-      // Add subject count per grade
-      const gradesCount = { 10: 0, 11: 0, 12: 0 };
-      teacherSlots.forEach((slot) => {
-        if (slot.grade in gradesCount) {
-          gradesCount[slot.grade as 10 | 11 | 12]++;
-        }
+      row.getCell(c).value = teacherSlots.length;
+      const grades = { 10: 0, 11: 0, 12: 0 } as Record<number, number>;
+      teacherSlots.forEach((s) => {
+        if (s.grade in grades) grades[s.grade]++;
       });
-      row.push(gradesCount[10], gradesCount[11], gradesCount[12]);
-
-      worksheet.addRow(row);
+      row.getCell(c + 1).value = grades[10];
+      row.getCell(c + 2).value = grades[11];
+      row.getCell(c + 3).value = grades[12];
     });
 
+    // عرض أعمدة
+    worksheet.getColumn(1).width = 28;
+    worksheet.getColumn(2).width = 12;
+    for (let i = 3; i < col + 4; i++) {
+      worksheet.getColumn(i).width = 8;
+    }
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -118,84 +131,43 @@ export async function exportTeacherScheduleExcel(
   slots: ScheduleSlotData[]
 ) {
   try {
+    const periodsCount = getPeriodsCount();
+    const PERIODS = getActivePeriods();
     const arrayBuffer = await loadActiveTemplate();
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
     const worksheet = workbook.getWorksheet(1);
+    if (!worksheet) throw new Error('Template worksheet not found');
 
-    if (!worksheet) {
-      throw new Error('Template worksheet not found');
-    }
+    trimWorksheetPeriods(worksheet, periodsCount);
 
-    // Set page setup to landscape orientation
     worksheet.pageSetup = {
       ...worksheet.pageSetup,
       orientation: 'landscape',
       fitToPage: true,
       fitToWidth: 1,
-      fitToHeight: 0
+      fitToHeight: 0,
     };
 
-    // Set all column widths to 11.11
-    if (worksheet.columns) {
-      worksheet.columns.forEach((col: any) => {
-        col.width = 11.11;
-      });
-    }
-
-    const titleCell = worksheet.getRow(1).getCell(4);
+    const titleCell = worksheet.getRow(TITLE_ROW).getCell(TITLE_COL);
     titleCell.value = `جدول المعلم: ${teacher.name}`;
 
     DAYS.forEach((day, dayIdx) => {
-      const rowNum = dayIdx + 4;
-      const periodValues: string[] = [];
-
-      [...PERIODS].forEach((period) => {
+      const rowNum = dayIdx + FIRST_DATA_ROW;
+      const periodValues: string[] = PERIODS.map((period) => {
         const slot = slots.find((s) => s.day === day && s.period === period);
-        periodValues.push(slot ? `${slot.grade}/${slot.section}` : '');
+        return slot ? `${slot.grade}/${slot.section}` : '';
       });
 
-      [...PERIODS].forEach((period, periodIdx) => {
-        const colIdx = periodIdx + 3;
-        const currentValue = periodValues[periodIdx];
-
-        if (currentValue) {
-          const cell = worksheet.getRow(rowNum).getCell(colIdx);
-          cell.value = currentValue;
-        }
-      });
-
-      const mergesToAdd: { start: number; end: number; value: string }[] = [];
-      let mergeStart = -1;
-      let currentMergeValue = '';
-
-      for (let i = 0; i < periodValues.length; i++) {
-        const value = periodValues[i];
-        if (value && value === currentMergeValue && mergeStart !== -1) continue;
-        if (mergeStart !== -1 && i - mergeStart > 1) {
-          mergesToAdd.push({ start: mergeStart, end: i - 1, value: currentMergeValue });
-        }
+      periodValues.forEach((value, idx) => {
         if (value) {
-          mergeStart = i;
-          currentMergeValue = value;
-        } else {
-          mergeStart = -1;
-          currentMergeValue = '';
+          worksheet.getRow(rowNum).getCell(idx + FIRST_PERIOD_COL).value = value;
         }
-      }
-
-      if (mergeStart !== -1 && periodValues.length - mergeStart > 1) {
-        mergesToAdd.push({ start: mergeStart, end: periodValues.length - 1, value: currentMergeValue });
-      }
-
-      mergesToAdd.forEach(merge => {
-        const startCol = merge.start + 3;
-        const endCol = merge.end + 3;
-        worksheet.mergeCells(rowNum, startCol, rowNum, endCol);
-        const mergedCell = worksheet.getRow(rowNum).getCell(startCol);
-        mergedCell.value = merge.value;
       });
+
+      // دمج الحصص المتتالية المتطابقة
+      mergeConsecutive(worksheet, rowNum, periodValues);
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -212,6 +184,83 @@ export async function exportTeacherScheduleExcel(
   }
 }
 
+function mergeConsecutive(worksheet: ExcelJS.Worksheet, rowNum: number, values: string[]) {
+  let mergeStart = -1;
+  let currentValue = '';
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v && v === currentValue && mergeStart !== -1) continue;
+    if (mergeStart !== -1 && i - mergeStart > 1) {
+      try {
+        worksheet.mergeCells(rowNum, mergeStart + FIRST_PERIOD_COL, rowNum, i - 1 + FIRST_PERIOD_COL);
+        worksheet.getRow(rowNum).getCell(mergeStart + FIRST_PERIOD_COL).value = currentValue;
+      } catch {}
+    }
+    if (v) {
+      mergeStart = i;
+      currentValue = v;
+    } else {
+      mergeStart = -1;
+      currentValue = '';
+    }
+  }
+  if (mergeStart !== -1 && values.length - mergeStart > 1) {
+    try {
+      worksheet.mergeCells(rowNum, mergeStart + FIRST_PERIOD_COL, rowNum, values.length - 1 + FIRST_PERIOD_COL);
+      worksheet.getRow(rowNum).getCell(mergeStart + FIRST_PERIOD_COL).value = currentValue;
+    } catch {}
+  }
+}
+
+// =====================================================
+// نسخ ورقة كاملة من قالب مع حذف الأعمدة الزائدة
+// =====================================================
+function copyTemplateToSheet(
+  baseTemplate: ExcelJS.Worksheet,
+  sheet: ExcelJS.Worksheet,
+  periodsCount: number
+) {
+  // نسخ تعريفات الأعمدة (مع تحديد العرض)
+  if (baseTemplate.model && baseTemplate.model.cols) {
+    sheet.columns = baseTemplate.model.cols.map(() => ({ width: 16 } as any));
+  }
+
+  baseTemplate.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const newRow = sheet.getRow(rowNumber);
+    if (row.height) newRow.height = row.height;
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const newCell = newRow.getCell(colNumber);
+      if (rowNumber !== TITLE_ROW || colNumber !== TITLE_COL) {
+        newCell.value = cell.value;
+      }
+      if (cell.style) {
+        newCell.style = {
+          ...cell.style,
+          font: cell.font ? { ...cell.font } : undefined,
+          alignment: cell.alignment ? { ...cell.alignment } : undefined,
+          border: cell.border ? { ...cell.border } : undefined,
+          fill: cell.fill ? { ...cell.fill } : undefined,
+          numFmt: cell.numFmt,
+        };
+      }
+    });
+  });
+
+  baseTemplate.columns.forEach((col, idx) => {
+    if (col && col.width) {
+      sheet.getColumn(idx + 1).width = col.width;
+    }
+  });
+
+  if (baseTemplate.model && baseTemplate.model.merges) {
+    baseTemplate.model.merges.forEach((merge: string) => {
+      try { sheet.mergeCells(merge); } catch {}
+    });
+  }
+
+  trimWorksheetPeriods(sheet, periodsCount);
+}
+
 // =====================================================
 // ================ تصدير جميع المعلمين =================
 // =====================================================
@@ -220,151 +269,45 @@ export async function exportAllTeachersExcel(
   allSlots: ScheduleSlot[]
 ) {
   try {
+    const periodsCount = getPeriodsCount();
+    const PERIODS = getActivePeriods();
     const arrayBuffer = await loadActiveTemplate();
-
     const finalWorkbook = new ExcelJS.Workbook();
 
     for (const teacher of teachers) {
-      // Load fresh template for each teacher
       const templateWorkbook = new ExcelJS.Workbook();
       await templateWorkbook.xlsx.load(arrayBuffer);
       const baseTemplate = templateWorkbook.getWorksheet(1);
       if (!baseTemplate) throw new Error('Template worksheet not found');
 
       const sheet = finalWorkbook.addWorksheet(teacher.name.substring(0, 30), {
-        views: [{ rightToLeft: true }]
+        views: [{ rightToLeft: true }],
       });
-
       sheet.pageSetup = {
         orientation: 'landscape',
         fitToPage: true,
         fitToWidth: 1,
-        fitToHeight: 0
+        fitToHeight: 0,
       };
 
+      copyTemplateToSheet(baseTemplate, sheet, periodsCount);
 
-      // Copy complete model including columns, rows, merges
-      if (baseTemplate.model) {
-        // Copy column definitions with widths (force all to 16)
-        if (baseTemplate.model.cols) {
-          sheet.columns = baseTemplate.model.cols.map(() => ({
-            width: 16
-          }));
-        }
-
-        // Copy all rows with complete styling (exact copy from template)
-        baseTemplate.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-          const newRow = sheet.getRow(rowNumber);
-          if (row.height) {
-            newRow.height = row.height;
-          }
-
-          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-            const newCell = newRow.getCell(colNumber);
-
-            // Copy value (but skip if it's the title row and column 4, we'll update it later)
-            if (rowNumber !== 1 || colNumber !== 4) {
-              newCell.value = cell.value;
-            }
-
-            // Copy complete style
-            if (cell.style) {
-              newCell.style = {
-                ...cell.style,
-                font: cell.font ? { ...cell.font } : undefined,
-                alignment: cell.alignment ? { ...cell.alignment } : undefined,
-                border: cell.border ? { ...cell.border } : undefined,
-                fill: cell.fill ? { ...cell.fill } : undefined,
-                numFmt: cell.numFmt
-              };
-            }
-          });
-        });
-
-        baseTemplate.columns.forEach((col, idx) => {
-          if (col && col.width) {
-            sheet.getColumn(idx + 1).width = col.width;
-          }
-        });
-
-
-        // Copy merged cells from template
-        if (baseTemplate.model.merges) {
-          baseTemplate.model.merges.forEach((merge: string) => {
-            try {
-              sheet.mergeCells(merge);
-            } catch (e) {
-              // Ignore merge errors for cells we'll merge later
-            }
-          });
-        }
-      }
-
-      // Now update the title
-      const titleCell = sheet.getRow(1).getCell(4);
-      titleCell.value = `جدول المعلم: ${teacher.name}`;
+      sheet.getRow(TITLE_ROW).getCell(TITLE_COL).value = `جدول المعلم: ${teacher.name}`;
 
       const teacherSlots = allSlots.filter(s => s.teacherId === teacher.id);
 
-      // Fill in the schedule data
       DAYS.forEach((day, dayIdx) => {
-        const rowNum = dayIdx + 4;
-        const periodValues: string[] = [];
-
-        [...PERIODS].forEach((period) => {
+        const rowNum = dayIdx + FIRST_DATA_ROW;
+        const periodValues: string[] = PERIODS.map((period) => {
           const slot = teacherSlots.find((s) => s.day === day && s.period === period);
-          periodValues.push(slot ? `${slot.grade}/${slot.section}` : '');
+          return slot ? `${slot.grade}/${slot.section}` : '';
         });
 
-        // Fill in period values
         periodValues.forEach((value, idx) => {
-          const cell = sheet.getRow(rowNum).getCell(idx + 3);
-          cell.value = value;
+          sheet.getRow(rowNum).getCell(idx + FIRST_PERIOD_COL).value = value;
         });
 
-        // Handle merging consecutive same values
-        let mergeStart = -1;
-        let currentValue = '';
-
-        for (let i = 0; i < periodValues.length; i++) {
-          const value = periodValues[i];
-
-          if (value && value === currentValue && mergeStart !== -1) {
-            continue;
-          }
-
-          if (mergeStart !== -1 && i - mergeStart > 1) {
-            const startCol = mergeStart + 3;
-            const endCol = i - 1 + 3;
-            try {
-              sheet.mergeCells(rowNum, startCol, rowNum, endCol);
-              const mergedCell = sheet.getRow(rowNum).getCell(startCol);
-              mergedCell.value = currentValue;
-            } catch (e) {
-              // Already merged or error
-            }
-          }
-
-          if (value) {
-            mergeStart = i;
-            currentValue = value;
-          } else {
-            mergeStart = -1;
-            currentValue = '';
-          }
-        }
-
-        if (mergeStart !== -1 && periodValues.length - mergeStart > 1) {
-          const startCol = mergeStart + 3;
-          const endCol = periodValues.length - 1 + 3;
-          try {
-            sheet.mergeCells(rowNum, startCol, rowNum, endCol);
-            const mergedCell = sheet.getRow(rowNum).getCell(startCol);
-            mergedCell.value = currentValue;
-          } catch (e) {
-            // Already merged or error
-          }
-        }
+        mergeConsecutive(sheet, rowNum, periodValues);
       });
     }
 
@@ -391,81 +334,41 @@ export async function exportClassScheduleExcel(
   slots: ClassScheduleSlot[]
 ) {
   try {
+    const periodsCount = getPeriodsCount();
+    const PERIODS = getActivePeriods();
     const arrayBuffer = await loadActiveTemplate();
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
     const worksheet = workbook.getWorksheet(1);
+    if (!worksheet) throw new Error('Template worksheet not found');
 
-    if (!worksheet) {
-      throw new Error('Template worksheet not found');
-    }
+    trimWorksheetPeriods(worksheet, periodsCount);
 
-    // Set page setup to landscape orientation
     worksheet.pageSetup = {
       ...worksheet.pageSetup,
       orientation: 'landscape',
       fitToPage: true,
       fitToWidth: 1,
-      fitToHeight: 0
+      fitToHeight: 0,
     };
 
-    // Set all column widths to 11.11
-    if (worksheet.columns) {
-      worksheet.columns.forEach((col: any) => {
-        col.width = 11.11;
-      });
-    }
-
-    const titleCell = worksheet.getRow(1).getCell(4);
-    titleCell.value = `جدول الصف: ${grade}/${section}`;
+    worksheet.getRow(TITLE_ROW).getCell(TITLE_COL).value = `جدول الصف: ${grade}/${section}`;
 
     DAYS.forEach((day, dayIdx) => {
-      const rowNum = dayIdx + 4;
-      const periodValues: string[] = [];
-
-      [...PERIODS].forEach((period) => {
+      const rowNum = dayIdx + FIRST_DATA_ROW;
+      const periodValues: string[] = PERIODS.map((period) => {
         const slot = slots.find((s) => s.day === day && s.period === period);
-        periodValues.push(slot ? getSubjectDisplayName(slot.subject, grade as Grade) : '');
+        return slot ? getSubjectDisplayName(slot.subject, grade as Grade) : '';
       });
 
       periodValues.forEach((value, idx) => {
         if (value) {
-          const cell = worksheet.getRow(rowNum).getCell(idx + 3);
-          cell.value = value;
+          worksheet.getRow(rowNum).getCell(idx + FIRST_PERIOD_COL).value = value;
         }
       });
 
-      const mergesToAdd: { start: number; end: number; value: string }[] = [];
-      let mergeStart = -1;
-      let currentMergeValue = '';
-
-      for (let i = 0; i < periodValues.length; i++) {
-        const value = periodValues[i];
-        if (value && value === currentMergeValue && mergeStart !== -1) continue;
-        if (mergeStart !== -1 && i - mergeStart > 1) {
-          mergesToAdd.push({ start: mergeStart, end: i - 1, value: currentMergeValue });
-        }
-        if (value) {
-          mergeStart = i;
-          currentMergeValue = value;
-        } else {
-          mergeStart = -1;
-          currentMergeValue = '';
-        }
-      }
-
-      if (mergeStart !== -1 && periodValues.length - mergeStart > 1) {
-        mergesToAdd.push({ start: mergeStart, end: periodValues.length - 1, value: currentMergeValue });
-      }
-
-      mergesToAdd.forEach(merge => {
-        const startCol = merge.start + 3;
-        const endCol = merge.end + 3;
-        worksheet.mergeCells(rowNum, startCol, rowNum, endCol);
-        const mergedCell = worksheet.getRow(rowNum).getCell(startCol);
-        mergedCell.value = merge.value;
-      });
+      mergeConsecutive(worksheet, rowNum, periodValues);
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -491,6 +394,8 @@ export async function exportAllClassesExcel(
   gradeSections?: Record<string, number[]>
 ) {
   try {
+    const periodsCount = getPeriodsCount();
+    const PERIODS = getActivePeriods();
     const arrayBuffer = await loadActiveTemplate();
 
     const finalWorkbook = new ExcelJS.Workbook();
@@ -498,159 +403,43 @@ export async function exportAllClassesExcel(
 
     for (let grade = 10; grade <= 12; grade++) {
       const sections = gradeSections?.[grade.toString()] || [1, 2, 3, 4, 5, 6, 7];
-
       for (const section of sections) {
-        // Load fresh template for each class
         const templateWorkbook = new ExcelJS.Workbook();
         await templateWorkbook.xlsx.load(arrayBuffer);
         const baseTemplate = templateWorkbook.getWorksheet(1);
         if (!baseTemplate) throw new Error('Template worksheet not found');
 
         const sheet = finalWorkbook.addWorksheet(`${grade}-${section}`, {
-          views: [{ rightToLeft: true }]
+          views: [{ rightToLeft: true }],
         });
-
         sheet.pageSetup = {
           orientation: 'landscape',
           fitToPage: true,
           fitToWidth: 1,
-          fitToHeight: 0
+          fitToHeight: 0,
         };
 
+        copyTemplateToSheet(baseTemplate, sheet, periodsCount);
+        sheet.getRow(TITLE_ROW).getCell(TITLE_COL).value = `جدول الصف: ${grade}/${section}`;
 
-        // Copy complete model including columns, rows, merges
-        if (baseTemplate.model) {
-          // Copy column definitions with widths (force all to 16)
-          if (baseTemplate.model.cols) {
-            sheet.columns = baseTemplate.model.cols.map(() => ({
-              width: 16
-            }));
-          }
+        const classSlots = allSlots.filter(s => s.grade === grade && s.section === section);
 
-          // Copy all rows with complete styling (exact copy from template)
-          baseTemplate.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-            const newRow = sheet.getRow(rowNumber);
-            if (row.height) {
-              newRow.height = row.height;
-            }
-
-            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-              const newCell = newRow.getCell(colNumber);
-
-              // Copy value (but skip if it's the title row and column 4, we'll update it later)
-              if (rowNumber !== 1 || colNumber !== 4) {
-                newCell.value = cell.value;
-              }
-
-              // Copy complete style
-              if (cell.style) {
-                newCell.style = {
-                  ...cell.style,
-                  font: cell.font ? { ...cell.font } : undefined,
-                  alignment: cell.alignment ? { ...cell.alignment } : undefined,
-                  border: cell.border ? { ...cell.border } : undefined,
-                  fill: cell.fill ? { ...cell.fill } : undefined,
-                  numFmt: cell.numFmt
-                };
-              }
-            });
-          });
-
-          // بعد نسخ كل الخلايا من القالب
-          baseTemplate.columns.forEach((col, idx) => {
-            if (col && col.width) {
-              sheet.getColumn(idx + 1).width = col.width;
-            }
-          });
-
-
-          // Copy merged cells from template
-          if (baseTemplate.model.merges) {
-            baseTemplate.model.merges.forEach((merge: string) => {
-              try {
-                sheet.mergeCells(merge);
-              } catch (e) {
-                // Ignore merge errors for cells we'll merge later
-              }
-            });
-          }
-        }
-
-        // Now update the title
-        const titleCell = sheet.getRow(1).getCell(4);
-        titleCell.value = `جدول الصف: ${grade}/${section}`;
-
-        const classSlots = allSlots.filter(
-          s => s.grade === grade && s.section === section
-        );
-
-        // Fill in the schedule data
         DAYS.forEach((day, dayIdx) => {
-          const rowNum = dayIdx + 4;
-          const periodValues: string[] = [];
-
-          [...PERIODS].forEach(period => {
+          const rowNum = dayIdx + FIRST_DATA_ROW;
+          const periodValues: string[] = PERIODS.map((period) => {
             const slot = classSlots.find((s) => s.day === day && s.period === period);
             if (slot) {
               const teacher = teacherMap.get(slot.teacherId);
-              const subjectName = teacher?.subject 
-                ? getSubjectDisplayName(teacher.subject, slot.grade as Grade)
-                : '';
-              periodValues.push(subjectName);
-            } else {
-              periodValues.push('');
+              return teacher?.subject ? getSubjectDisplayName(teacher.subject, slot.grade as Grade) : '';
             }
+            return '';
           });
 
-          // Fill in period values
           periodValues.forEach((value, idx) => {
-            const cell = sheet.getRow(rowNum).getCell(idx + 3);
-            cell.value = value;
+            sheet.getRow(rowNum).getCell(idx + FIRST_PERIOD_COL).value = value;
           });
 
-          // Handle merging consecutive same values
-          let mergeStart = -1;
-          let currentValue = '';
-
-          for (let i = 0; i < periodValues.length; i++) {
-            const value = periodValues[i];
-
-            if (value && value === currentValue && mergeStart !== -1) {
-              continue;
-            }
-
-            if (mergeStart !== -1 && i - mergeStart > 1) {
-              const startCol = mergeStart + 3;
-              const endCol = i - 1 + 3;
-              try {
-                sheet.mergeCells(rowNum, startCol, rowNum, endCol);
-                const mergedCell = sheet.getRow(rowNum).getCell(startCol);
-                mergedCell.value = currentValue;
-              } catch (e) {
-                // Already merged or error
-              }
-            }
-
-            if (value) {
-              mergeStart = i;
-              currentValue = value;
-            } else {
-              mergeStart = -1;
-              currentValue = '';
-            }
-          }
-
-          if (mergeStart !== -1 && periodValues.length - mergeStart > 1) {
-            const startCol = mergeStart + 3;
-            const endCol = periodValues.length - 1 + 3;
-            try {
-              sheet.mergeCells(rowNum, startCol, rowNum, endCol);
-              const mergedCell = sheet.getRow(rowNum).getCell(startCol);
-              mergedCell.value = currentValue;
-            } catch (e) {
-              // Already merged or error
-            }
-          }
+          mergeConsecutive(sheet, rowNum, periodValues);
         });
       }
     }
