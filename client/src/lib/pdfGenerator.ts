@@ -3,8 +3,8 @@ import autoTable from "jspdf-autotable";
 import type { Teacher, ScheduleSlot } from "@shared/schema";
 import type { ScheduleSlotData } from "@/types/schedule";
 import type { ClassScheduleSlot } from "@/components/ClassScheduleTable";
-import { DAYS } from "@shared/schema";
-import { getActivePeriods } from "./scheduleConfig";
+import { DAYS, PERIODS, getSubjectDisplayName } from "@shared/schema";
+import type { Grade } from "@shared/schema";
 import { loadArabicFont, loadMultipleFonts } from "./arabicFont";
 import type { PDFCustomizationOptions } from "@/types/pdfCustomization";
 import { DEFAULT_PDF_OPTIONS } from "@/types/pdfCustomization";
@@ -14,7 +14,6 @@ export async function exportTeacherSchedulePDF(
   slots: ScheduleSlotData[],
   customOptions?: PDFCustomizationOptions
 ) {
-  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -99,7 +98,6 @@ export async function exportClassSchedulePDF(
   showTeacherNames: boolean,
   customOptions?: PDFCustomizationOptions
 ) {
-  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -123,9 +121,10 @@ export async function exportClassSchedulePDF(
     [...PERIODS].reverse().forEach((period) => {
       const slot = slots.find((s) => s.day === day && s.period === period);
       if (slot) {
+        const displaySubject = getSubjectDisplayName(slot.subject, grade as Grade);
         const cellContent = showTeacherNames
-          ? `${slot.subject}\n(${slot.teacherName})`
-          : slot.subject;
+          ? `${displaySubject}\n(${slot.teacherName})`
+          : displaySubject;
         row.push(cellContent);
       } else {
         row.push("-");
@@ -174,7 +173,6 @@ export async function exportAllTeachersPDF(
   allSlots: ScheduleSlot[],
   customOptions?: PDFCustomizationOptions
 ) {
-  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -284,7 +282,6 @@ export async function exportAllClassesPDF(
   customOptions?: PDFCustomizationOptions,
   gradeSections?: Record<string, number[]>
 ) {
-  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
@@ -334,9 +331,10 @@ export async function exportAllClassesPDF(
             (s) => s.day === day && s.period === period
           );
           if (slot) {
+            const displaySubject = getSubjectDisplayName(slot.subject, grade as Grade);
             const cellContent = showTeacherNames
-              ? `${slot.subject}\n(${slot.teacherName})`
-              : slot.subject;
+              ? `${displaySubject}\n(${slot.teacherName})`
+              : displaySubject;
             row.push(cellContent);
           } else {
             row.push("-");
@@ -431,7 +429,6 @@ export async function exportMasterSchedulePDF(
   teacherNotes: Record<string, string>,
   customOptions?: PDFCustomizationOptions
 ) {
-  const PERIODS = getActivePeriods();
   const options = { ...DEFAULT_PDF_OPTIONS, ...customOptions };
   const doc = new jsPDF({
     orientation: "landscape",
